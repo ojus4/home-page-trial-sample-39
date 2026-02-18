@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOLVO | The Career Operating System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0F0F10; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+
+        /* Animations */
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-scroll {
+            animation: scroll 30s linear infinite;
+        }
+        
+        .perspective-1000 { perspective: 1000px; }
+        .perspective-2000 { perspective: 2000px; }
+        
+        .rotate-x-12 { transform: rotateX(12deg); }
+        .rotate-x-0 { transform: rotateX(0deg); }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-[#F5F5F7] text-[#1D1D1F] overflow-x-hidden antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICON COMPONENTS (SVG Definitions) ---
+        const IconBase = ({ children, className, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className={className} 
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Zap = (props) => <IconBase {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconBase>;
+        const ArrowRight = (props) => <IconBase {...props}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconBase>;
+        const Compass = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></IconBase>;
+        const PlayCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></IconBase>;
+        const Lock = (props) => <IconBase {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>;
+        const Layout = (props) => <IconBase {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></IconBase>;
+        const Globe = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconBase>;
+        const Code = (props) => <IconBase {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></IconBase>;
+        const Plus = (props) => <IconBase {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconBase>;
+        const Activity = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        const Database = (props) => <IconBase {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></IconBase>;
+        const Maximize2 = (props) => <IconBase {...props}><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></IconBase>;
+        const TrendingUp = (props) => <IconBase {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></IconBase>;
+        const CheckCircle2 = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></IconBase>;
+        const GraduationCap = (props) => <IconBase {...props}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></IconBase>;
+        const Search = (props) => <IconBase {...props}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></IconBase>;
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [isScrolled, setIsScrolled] = useState(false);
+            const [activeTab, setActiveTab] = useState('board');
+            const [heroLoaded, setHeroLoaded] = useState(false);
+
+            useEffect(() => {
+                setHeroLoaded(true);
+                const handleScroll = () => setIsScrolled(window.scrollY > 20);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const marketTrends = [
+                { role: "React Developer", trend: "+12%", color: "text-green-500" },
+                { role: "Data Scientist", trend: "+8%", color: "text-green-500" },
+                { role: "UX Writer", trend: "-2%", color: "text-red-500" },
+                { role: "Prompt Engineer", trend: "+450%", color: "text-green-500" },
+                { role: "DevOps Architect", trend: "+15%", color: "text-green-500" },
+            ];
+
+            return (
+                <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] overflow-x-hidden perspective-1000">
+                    
+                    {/* 1. Live Market Ticker */}
+                    <div className="bg-[#1D1D1F] text-white py-2 overflow-hidden flex items-center justify-center relative z-50">
+                        <div className="flex gap-8 animate-scroll whitespace-nowrap text-xs font-medium tracking-widest uppercase opacity-80">
+                            {marketTrends.map((item, i) => (
+                                <span key={i} className="flex items-center gap-2">
+                                    {item.role} <span className={item.color}>{item.trend}</span> •
+                                </span>
+                            ))}
+                            {marketTrends.map((item, i) => (
+                                <span key={`dup-${i}`} className="flex items-center gap-2">
+                                    {item.role} <span className={item.color}>{item.trend}</span> •
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 2. Navigation */}
+                    <nav className={`fixed top-12 left-1/2 -translate-x-1/2 w-[95%] max-w-6xl z-40 transition-all duration-500 rounded-full px-6 py-4 flex justify-between items-center ${isScrolled ? 'bg-white/80 backdrop-blur-2xl shadow-2xl border border-white/40 scale-95' : 'bg-transparent border border-transparent'}`}>
+                        <div className="flex items-center gap-2 cursor-pointer group">
+                            <div className="w-10 h-10 bg-gradient-to-tr from-[#1D1D1F] to-[#434343] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:rotate-12 transition-transform duration-300">S</div>
+                            <span className="text-xl font-bold tracking-tight text-[#1D1D1F]">SOLVO</span>
+                        </div>
+                        
+                        <div className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-500 bg-slate-100/50 p-1.5 rounded-full border border-white/50 backdrop-blur-sm">
+                            {['Product', 'Methodology', 'Pricing', 'Resources'].map((item) => (
+                                <button key={item} className="px-5 py-2 rounded-full hover:bg-white hover:text-black hover:shadow-sm transition-all duration-300">
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-black transition-colors px-4">Log In</button>
+                            <button className="bg-[#0071e3] text-white text-sm font-semibold px-6 py-3 rounded-full hover:bg-[#0077ED] hover:shadow-lg hover:shadow-blue-500/30 transition-all active:scale-95 flex items-center gap-2 group">
+                                Get Started <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        </div>
+                    </nav>
+
+                    {/* 3. Hero Section */}
+                    <section className="relative pt-48 pb-32 md:pt-60 md:pb-48 overflow-visible">
+                        {/* Background Elements */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full overflow-hidden -z-10 pointer-events-none">
+                            <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] bg-indigo-400/20 rounded-full blur-[120px] mix-blend-multiply animate-float"></div>
+                            <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] bg-blue-400/20 rounded-full blur-[120px] mix-blend-multiply animate-float" style={{animationDelay: '2s'}}></div>
+                            <div className="absolute bottom-0 left-[30%] w-[400px] h-[400px] bg-purple-400/20 rounded-full blur-[100px] mix-blend-multiply animate-pulse"></div>
+                        </div>
+
+                        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
+                            <div className={`transition-all duration-1000 transform ${heroLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                <div className="inline-flex items-center gap-2 bg-white/50 backdrop-blur-md border border-white/60 text-indigo-900 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider mb-8 shadow-sm hover:shadow-md transition-shadow cursor-default">
+                                    <Zap className="w-3 h-3 text-yellow-500 fill-current" /> V2.0: The Career Operating System
+                                </div>
+                                
+                                <h1 className="text-6xl md:text-8xl font-bold text-[#1D1D1F] mb-8 tracking-tighter leading-[1]">
+                                    Your career is a project.<br/>
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600">Manage it like one.</span>
+                                </h1>
+                                
+                                <p className="text-xl md:text-2xl text-slate-500 max-w-2xl mx-auto mb-14 leading-relaxed font-medium">
+                                    SOLVO replaces the chaos of random courses and outdated advice with a single, intelligent execution environment.
+                                </p>
+                                
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-24">
+                                    <button className="h-16 px-10 rounded-full bg-[#1D1D1F] text-white font-bold text-lg hover:bg-black transition-all hover:-translate-y-1 hover:shadow-2xl flex items-center gap-3 group border border-transparent">
+                                        <Compass className="w-5 h-5 group-hover:rotate-45 transition-transform" /> Start Discovery
+                                    </button>
+                                    <button className="h-16 px-10 rounded-full bg-white text-[#1D1D1F] font-bold text-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-3 shadow-lg shadow-slate-200/50">
+                                        <PlayCircle className="w-5 h-5 text-indigo-600" /> Watch Demo
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 3D Dashboard Mockup */}
+                            <div className={`relative mx-auto max-w-6xl transition-all duration-1000 delay-300 transform perspective-2000 ${heroLoaded ? 'rotate-x-0 opacity-100 translate-y-0 scale-100' : 'rotate-x-12 opacity-0 translate-y-20 scale-95'}`}>
+                                
+                                <div className="relative rounded-[24px] bg-[#0F0F10] ring-1 ring-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] overflow-hidden aspect-[16/10] md:aspect-[16/9] group hover:scale-[1.01] transition-transform duration-500">
+                                    
+                                    {/* Window Controls */}
+                                    <div className="h-14 bg-[#1A1A1A]/90 backdrop-blur-md flex items-center px-6 gap-4 border-b border-white/5 sticky top-0 z-20">
+                                        <div className="flex gap-2">
+                                            <div className="w-3 h-3 rounded-full bg-[#FF5F57]"></div>
+                                            <div className="w-3 h-3 rounded-full bg-[#FEBC2E]"></div>
+                                            <div className="w-3 h-3 rounded-full bg-[#28C840]"></div>
+                                        </div>
+                                        <div className="w-px h-4 bg-white/10 mx-2"></div>
+                                        <div className="flex gap-6 text-xs font-semibold tracking-wide text-gray-500">
+                                            {['Dashboard', 'Roadmap', 'Market', 'Settings'].map(tab => (
+                                                <span key={tab} 
+                                                    className={`cursor-pointer hover:text-white transition-colors py-1 relative ${activeTab === (tab === 'Dashboard' ? 'board' : tab.toLowerCase()) ? 'text-white' : ''}`}
+                                                    onClick={() => setActiveTab(tab === 'Dashboard' ? 'board' : 'locked')}>
+                                                    {tab}
+                                                    {activeTab === (tab === 'Dashboard' ? 'board' : tab.toLowerCase()) && <span className="absolute -bottom-[19px] left-0 w-full h-[2px] bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="ml-auto bg-[#252526] px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2 text-xs text-gray-400">
+                                            <Lock className="w-3 h-3" /> Pro Workspace
+                                        </div>
+                                    </div>
+
+                                    {/* Dashboard Content */}
+                                    <div className="flex h-full text-white bg-[#0F0F10]">
+                                        {/* Sidebar */}
+                                        <div className="w-72 bg-[#131314] border-r border-white/5 p-6 hidden md:flex flex-col gap-8 text-left">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Focus</div>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600 text-white font-medium shadow-lg shadow-blue-900/20 cursor-pointer">
+                                                        <Layout className="w-4 h-4" /> Board View
+                                                    </div>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 cursor-pointer transition-colors group">
+                                                        <Compass className="w-4 h-4 group-hover:text-blue-400" /> Psych Profile
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div>
+                                                <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">Integrations</div>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 cursor-pointer group">
+                                                        <Globe className="w-4 h-4 text-emerald-500" /> O*NET Data
+                                                    </div>
+                                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 cursor-pointer group">
+                                                        <Code className="w-4 h-4 text-yellow-500" /> LeetCode Sync
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-auto p-4 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-white/5">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">JD</div>
+                                                    <div>
+                                                        <div className="text-xs font-bold">John Doe</div>
+                                                        <div className="text-[10px] text-gray-400">Pro Member</div>
+                                                    </div>
+                                                </div>
+                                                <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
+                                                    <div className="w-[75%] h-full bg-blue-500"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Main Canvas */}
+                                        <div className="flex-1 bg-[#0F0F10] p-8 overflow-y-auto custom-scrollbar relative text-left">
+                                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+                                            {activeTab === 'board' ? (
+                                                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                                    {/* Header */}
+                                                    <div className="flex items-end justify-between mb-10">
+                                                        <div>
+                                                            <div className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">Your Path</div>
+                                                            <h2 className="text-3xl font-bold text-white">Full Stack Architect</h2>
+                                                        </div>
+                                                        <div className="flex gap-3">
+                                                            <button className="bg-[#1A1A1A] border border-white/10 hover:bg-[#252526] text-white px-4 py-2 rounded-lg text-xs font-bold transition-all">Export</button>
+                                                            <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20">
+                                                                <Plus className="w-4 h-4" /> New Sprint
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Widgets Row */}
+                                                    <div className="grid grid-cols-3 gap-6 mb-10">
+                                                        <div className="bg-[#161617] border border-white/5 p-6 rounded-[20px] shadow-sm relative overflow-hidden group hover:border-white/10 transition-all">
+                                                            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity"><Zap className="w-12 h-12 text-yellow-500" /></div>
+                                                            <div className="text-2xl font-bold text-white mb-1">850</div>
+                                                            <div className="text-xs text-gray-500 font-medium">XP Gained this week</div>
+                                                            <div className="mt-4 flex gap-1">
+                                                                {[1,2,3,4,5].map(i => <div key={i} className={`h-1 flex-1 rounded-full ${i<4 ? 'bg-yellow-500' : 'bg-gray-800'}`}></div>)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="bg-[#161617] border border-white/5 p-6 rounded-[20px] shadow-sm relative overflow-hidden group hover:border-white/10 transition-all">
+                                                            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity"><Activity className="w-12 h-12 text-green-500" /></div>
+                                                            <div className="text-2xl font-bold text-white mb-1">Top 5%</div>
+                                                            <div className="text-xs text-gray-500 font-medium">Aptitude Score</div>
+                                                            <div className="mt-4 text-xs text-green-400 bg-green-900/20 inline-block px-2 py-0.5 rounded border border-green-900/30">Verified</div>
+                                                        </div>
+                                                        <div className="bg-[#161617] border border-white/5 p-6 rounded-[20px] shadow-sm relative overflow-hidden group hover:border-white/10 transition-all">
+                                                            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity"><Database className="w-12 h-12 text-blue-500" /></div>
+                                                            <div className="text-2xl font-bold text-white mb-1">12</div>
+                                                            <div className="text-xs text-gray-500 font-medium">Resources Mastered</div>
+                                                            <div className="mt-4 flex -space-x-2">
+                                                                {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full bg-gray-700 border border-[#161617]"></div>)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Kanban Board Mockup */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="bg-blue-500/20 text-blue-400 p-1.5 rounded-lg"><Maximize2 className="w-4 h-4" /></div>
+                                                                <h3 className="font-bold text-sm text-gray-200">Current Sprint: Backend V2</h3>
+                                                            </div>
+                                                            <span className="text-xs text-gray-600 font-mono">2 Weeks Left</span>
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            {/* Task 1 */}
+                                                            <div className="group flex items-center bg-[#161617] hover:bg-[#1C1C1E] border border-white/5 p-4 rounded-xl cursor-pointer transition-all hover:scale-[1.01]">
+                                                                <div className="w-5 h-5 rounded-full border-2 border-gray-600 mr-4 group-hover:border-blue-500 transition-colors"></div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-medium text-gray-200">Integrate Razorpay Webhooks</div>
+                                                                </div>
+                                                                <div className="flex items-center gap-6">
+                                                                    <span className="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-1 rounded">DOING</span>
+                                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                        <div className="w-2 h-2 rounded-full bg-red-500"></div> High
+                                                                    </div>
+                                                                    <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                                                        <div className="w-1/2 h-full bg-blue-500"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Task 2 */}
+                                                            <div className="group flex items-center bg-[#161617] hover:bg-[#1C1C1E] border border-white/5 p-4 rounded-xl cursor-pointer transition-all hover:scale-[1.01]">
+                                                                <div className="w-5 h-5 rounded-full border-2 border-gray-600 mr-4 group-hover:border-blue-500 transition-colors"></div>
+                                                                <div className="flex-1">
+                                                                    <div className="text-sm font-medium text-gray-200">Database Schema Design</div>
+                                                                </div>
+                                                                <div className="flex items-center gap-6">
+                                                                    <span className="bg-green-500/20 text-green-400 text-[10px] font-bold px-2 py-1 rounded">DONE</span>
+                                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div> Medium
+                                                                    </div>
+                                                                    <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                                                        <div className="w-full h-full bg-green-500"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in-95">
+                                                    <div className="w-20 h-20 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-6">
+                                                        <Lock className="w-8 h-8 text-gray-500" />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold text-white mb-2">Pro Feature</h3>
+                                                    <p className="text-gray-500 text-sm mb-6 max-w-xs text-center">Unlock advanced timelines, O*NET market data, and aptitude certification.</p>
+                                                    <button className="bg-white text-black px-8 py-3 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors">Upgrade Plan</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 4. The Engine Section */}
+                    <section className="py-32 bg-white relative overflow-hidden">
+                        <div className="max-w-7xl mx-auto px-6 relative z-10">
+                            <div className="text-center mb-24">
+                                <h2 className="text-4xl md:text-5xl font-bold text-[#1D1D1F] mb-6">The SOLVO Engine.</h2>
+                                <p className="text-xl text-slate-500 max-w-2xl mx-auto">Three integrated systems working in harmony to guarantee your career trajectory.</p>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-12 relative">
+                                <div className="hidden md:block absolute top-[60px] left-[16%] right-[16%] h-[2px] bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 -z-10"></div>
+                                
+                                {/* Step 1 */}
+                                <div className="relative group">
+                                    <div className="w-32 h-32 mx-auto bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] flex items-center justify-center mb-10 border border-slate-100 group-hover:scale-110 transition-transform duration-500 z-20 relative">
+                                        <Compass className="w-12 h-12 text-blue-600" />
+                                        <div className="absolute -inset-4 bg-blue-500/10 rounded-[2rem] -z-10 scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-500"></div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-center mb-4">1. Psychometric Core</h3>
+                                    <p className="text-slate-500 text-center leading-relaxed">
+                                        We map your "Big Five" personality traits to 2,000+ industrial roles to find your natural fit.
+                                    </p>
+                                </div>
+
+                                {/* Step 2 */}
+                                <div className="relative group">
+                                    <div className="w-32 h-32 mx-auto bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] flex items-center justify-center mb-10 border border-slate-100 group-hover:scale-110 transition-transform duration-500 z-20 relative">
+                                        <TrendingUp className="w-12 h-12 text-purple-600" />
+                                        <div className="absolute -inset-4 bg-purple-500/10 rounded-[2rem] -z-10 scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-500"></div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-center mb-4">2. Market Validation</h3>
+                                    <p className="text-slate-500 text-center leading-relaxed">
+                                        We cross-reference your fit with real-time O*NET & LinkedIn data to ensure job security.
+                                    </p>
+                                </div>
+
+                                {/* Step 3 */}
+                                <div className="relative group">
+                                    <div className="w-32 h-32 mx-auto bg-white rounded-3xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] flex items-center justify-center mb-10 border border-slate-100 group-hover:scale-110 transition-transform duration-500 z-20 relative">
+                                        <Layout className="w-12 h-12 text-indigo-600" />
+                                        <div className="absolute -inset-4 bg-indigo-500/10 rounded-[2rem] -z-10 scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-500"></div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-center mb-4">3. Execution OS</h3>
+                                    <p className="text-slate-500 text-center leading-relaxed">
+                                        A pre-built Notion-style workspace with roadmaps, Kanban boards, and resources generated instantly.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 5. Features Grid */}
+                    <section className="py-32 bg-[#111111] text-white relative">
+                        <div className="max-w-7xl mx-auto px-6">
+                            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+                                <h2 className="text-4xl md:text-6xl font-bold tracking-tighter">
+                                    Intelligent by design.<br/>
+                                    <span className="text-gray-500">Built for builders.</span>
+                                </h2>
+                                <p className="text-gray-400 max-w-sm text-lg">
+                                    Every pixel is engineered to help you learn faster, track better, and get hired sooner.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[400px]">
+                                {/* Library Card */}
+                                <div className="md:col-span-2 bg-[#1A1A1A] rounded-[3rem] p-10 relative overflow-hidden group hover:bg-[#202020] transition-colors border border-white/5">
+                                    <div className="relative z-10 flex flex-col h-full justify-between">
+                                        <div>
+                                            <div className="w-12 h-12 bg-orange-500/20 text-orange-400 rounded-2xl flex items-center justify-center mb-6">
+                                                <PlayCircle className="w-6 h-6" />
+                                            </div>
+                                            <h3 className="text-3xl font-bold mb-4">The Index.</h3>
+                                            <p className="text-gray-400 max-w-md text-lg">
+                                                Stop searching. We've indexed the top 1% of content from YouTube, Coursera, and Udemy, categorized by the specific skill node in your roadmap.
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-4 opacity-50 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">
+                                            <div className="bg-red-600 h-10 w-24 rounded-lg flex items-center justify-center font-bold text-xs">YouTube</div>
+                                            <div className="bg-blue-600 h-10 w-24 rounded-lg flex items-center justify-center font-bold text-xs">Coursera</div>
+                                            <div className="bg-purple-600 h-10 w-24 rounded-lg flex items-center justify-center font-bold text-xs">Udemy</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Aptitude Card */}
+                                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3rem] p-10 relative overflow-hidden group">
+                                    <div className="relative z-10">
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center mb-6">
+                                            <GraduationCap className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-3xl font-bold mb-4">Verify It.</h3>
+                                        <p className="text-blue-100 text-lg">
+                                            CAT-style aptitude tests to prove you're actually ready for the role.
+                                        </p>
+                                    </div>
+                                    <Activity className="absolute -bottom-10 -right-10 w-64 h-64 text-white/10 group-hover:scale-110 transition-transform duration-700" />
+                                </div>
+
+                                {/* Market Data */}
+                                <div className="bg-[#1A1A1A] rounded-[3rem] p-10 relative overflow-hidden group hover:bg-[#202020] transition-colors border border-white/5">
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="text-2xl font-bold">Market Pulse</h3>
+                                            <TrendingUp className="text-green-500 w-8 h-8" />
+                                        </div>
+                                        <div className="mt-8 space-y-4">
+                                            <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
+                                                <span className="text-gray-400">Salary Growth</span>
+                                                <span className="text-green-400 font-mono">+12%</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
+                                                <span className="text-gray-400">Remote Availability</span>
+                                                <span className="text-green-400 font-mono">High</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm border-b border-white/10 pb-2">
+                                                <span className="text-gray-400">Competition</span>
+                                                <span className="text-orange-400 font-mono">Medium</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Auto-Kanban */}
+                                <div className="md:col-span-2 bg-[#F5F5F7] rounded-[3rem] p-10 relative overflow-hidden group">
+                                    <div className="relative z-10 text-[#1D1D1F]">
+                                        <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center mb-6">
+                                            <Layout className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-3xl font-bold mb-4">Auto-Generated Workspaces</h3>
+                                        <p className="text-slate-500 max-w-md text-lg">
+                                            When you select a roadmap, SOLVO automatically builds a Kanban board with tasks, deadlines, and resources pre-filled.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 6. Pricing */}
+                    <section className="py-32 bg-white relative">
+                        <div className="max-w-7xl mx-auto px-6 text-center">
+                            <h2 className="text-4xl font-bold mb-16">Simple Pricing. Lifetime Value.</h2>
+                            
+                            <div className="flex flex-col md:flex-row justify-center gap-8 max-w-5xl mx-auto">
+                                <div className="flex-1 bg-slate-50 border border-slate-100 p-10 rounded-[2.5rem] text-left hover:shadow-xl transition-shadow duration-300">
+                                    <div className="text-slate-900 font-bold text-lg mb-2">Discovery</div>
+                                    <div className="text-5xl font-bold tracking-tight mb-6">Free</div>
+                                    <button className="w-full py-4 rounded-xl border-2 border-slate-200 font-bold text-slate-700 hover:border-slate-900 hover:text-slate-900 transition-colors mb-10">
+                                        Get Started
+                                    </button>
+                                    <ul className="space-y-4 text-slate-600 font-medium">
+                                        <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-500" /> Basic Psychometric Test</li>
+                                        <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-500" /> Career Profile Teaser</li>
+                                        <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-indigo-500" /> Access to Blog Content</li>
+                                    </ul>
+                                </div>
+
+                                <div className="flex-1 bg-[#1D1D1F] text-white p-10 rounded-[2.5rem] text-left relative overflow-hidden shadow-2xl group transform hover:-translate-y-2 transition-transform duration-300">
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div className="text-white font-bold text-lg">SOLVO Pro</div>
+                                            <span className="bg-blue-600 text-xs font-bold px-3 py-1 rounded-full">RECOMMENDED</span>
+                                        </div>
+                                        <div className="text-5xl font-bold tracking-tight mb-2">₹99</div>
+                                        <div className="text-gray-400 text-sm mb-6">One-time payment. Lifetime access.</div>
+                                        
+                                        <button className="w-full py-4 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/50 mb-10">
+                                            Unlock Everything
+                                        </button>
+                                        
+                                        <ul className="space-y-4 text-gray-300 font-medium">
+                                            <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400" /> <strong>Full</strong> Psychometric Report</li>
+                                            <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400" /> <strong>Interactive</strong> Roadmap</li>
+                                            <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400" /> <strong>Auto-Generated</strong> Dashboard</li>
+                                            <li className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400" /> Aptitude Verification</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="bg-[#FAFAFA] border-t border-slate-200 pt-20 pb-10">
+                        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 mb-16">
+                            <div className="col-span-1">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <div className="w-8 h-8 bg-[#1D1D1F] rounded-lg flex items-center justify-center text-white font-bold text-lg">S</div>
+                                    <span className="text-xl font-bold tracking-tight text-[#1D1D1F]">SOLVO</span>
+                                </div>
+                                <p className="text-slate-500 text-sm leading-relaxed">
+                                    The operating system for career growth. Replacing guesswork with data, and planning with execution.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-[#1D1D1F] mb-6">Platform</h4>
+                                <ul className="space-y-4 text-sm text-slate-500">
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Psychometric Engine</a></li>
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Job Market Trends</a></li>
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Resource Library</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-[#1D1D1F] mb-6">Resources</h4>
+                                <ul className="space-y-4 text-sm text-slate-500">
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Career Blog</a></li>
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Personality Types</a></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-[#1D1D1F] mb-6">Legal</h4>
+                                <ul className="space-y-4 text-sm text-slate-500">
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+                                    <li><a href="#" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-6 text-center border-t border-slate-200 pt-8">
+                            <p className="text-slate-400 text-sm">© 2024 SOLVO Systems Inc. Designed in California. Built for the World.</p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
